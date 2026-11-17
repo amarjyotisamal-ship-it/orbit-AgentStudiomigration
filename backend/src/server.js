@@ -1,4 +1,4 @@
-import "dotenv/config";
+import dotenv from "dotenv";\nimport path from "node:path";\nimport { fileURLToPath } from "node:url";\nconst here = path.dirname(fileURLToPath(import.meta.url));\ndotenv.config({ path: path.join(here, "..", "..", ".env") });
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
