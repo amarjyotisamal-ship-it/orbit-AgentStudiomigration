@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "./db.js";
 import { issueToken, requireAuth } from "./auth.js";
-import { generateContent } from "./aiAdapter.js";
+import { generateContent, generateImage } from "./aiAdapter.js";
 
 const app = express();
 const port = Number(process.env.PORT || 5001);
@@ -23,6 +23,13 @@ const generateSchema = z.object({
   topic: z.string().trim().min(5).max(500),
   audience: z.string().trim().max(300).default(""),
   tone: z.enum(["Professional", "Executive", "Conversational", "Technical"]).default("Professional")
+});
+
+const imageSchema = z.object({
+  prompt: z.string().trim().min(8).max(4000),
+  style: z.string().trim().max(50).default("Auto"),
+  purpose: z.string().trim().max(50).default("Campaign Creative"),
+  ratio: z.enum(["Auto", "1:1", "4:5", "16:9", "9:16", "3:2"]).default("1:1")
 });
 
 const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, createdAt: u.created_at });
@@ -73,6 +80,18 @@ app.post("/api/generations", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("AI generation failed:", error.message);
     res.status(502).json({ error: "AI service is currently unavailable. Your account and saved work are unchanged." });
+  }
+});
+
+app.post("/api/images/generate", requireAuth, async (req, res) => {
+  const parsed = imageSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
+  try {
+    const result = await generateImage(parsed.data, { userRef: `poc-user-${Number(req.identity.sub)}` });
+    res.json(result);
+  } catch (error) {
+    console.error("Image generation failed:", error.message);
+    res.status(502).json({ error: "Image generation is currently unavailable. Your Orbit account and database are unchanged." });
   }
 });
 
