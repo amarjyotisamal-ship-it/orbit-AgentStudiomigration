@@ -1,0 +1,31 @@
+name: Validate Orbit external Agent Studio consumer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  orbit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install root dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install backend dependencies
+        run: npm install --prefix backend --no-audit --no-fund
+      - name: Install frontend dependencies
+        run: npm install --prefix frontend --no-audit --no-fund
+      - name: Check backend JavaScript syntax
+        run: find backend/src -name '*.js' -print0 | xargs -0 -n 1 node --check
+      - name: Run backend tests
+        run: npm test --prefix backend
+      - name: Build Orbit React frontend
+        run: npm run build --prefix frontend
