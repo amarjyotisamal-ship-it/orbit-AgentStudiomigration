@@ -1,52 +1,389 @@
-import React,{useEffect,useState} from "react";
-import {createRoot} from "react-dom/client";
-import {Sparkles,LayoutDashboard,History,LogOut,ArrowRight,ShieldCheck,Database,Zap,Trash2,CheckCircle2,UserRound,Image as ImageIcon} from "lucide-react";
-import {request} from "./api";
-import "./styles.css";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  Sparkles, LayoutDashboard, History, LogOut, ArrowRight, ShieldCheck, Database,
+  Zap, Trash2, CheckCircle2, Image as ImageIcon, Search, RefreshCw,
+  LockKeyhole, Braces, Play, ChevronLeft, AlertCircle, FileText,
+  Server, Activity, ArrowUpRight, Layers3
+} from 'lucide-react';
+import { request } from './api.js';
+import './styles.css';
 
-const storeSession=(data)=>{localStorage.setItem("poc_token",data.token);localStorage.setItem("poc_user",JSON.stringify(data.user));};
-const clearSession=()=>{localStorage.removeItem("poc_token");localStorage.removeItem("poc_user");};
+const saveSession = (data) => {
+  localStorage.setItem('poc_token', data.token);
+  localStorage.setItem('poc_user', JSON.stringify(data.user));
+};
+const clearSession = () => {
+  localStorage.removeItem('poc_token');
+  localStorage.removeItem('poc_user');
+};
+const textOf = (error) => error instanceof Error ? error.message : 'Something went wrong.';
+const imageDefault = {
+  prompt: 'A professional collaborative AI workspace with modern technology and warm natural lighting',
+  style: 'Auto',
+  purpose: 'Campaign Creative',
+  ratio: '1:1',
+};
 
-function Auth({onAuth}){
- const [mode,setMode]=useState("login"),[form,setForm]=useState({name:"",email:"",password:""}),[error,setError]=useState(""),[busy,setBusy]=useState(false);
- async function submit(e){e.preventDefault();setBusy(true);setError("");try{const data=await request(`/auth/${mode}`,{method:"POST",body:JSON.stringify(form)});storeSession(data);onAuth(data.user);}catch(e){setError(e.message)}finally{setBusy(false)}}
- return <main className="auth-shell"><section className="auth-brand"><div className="logo"><Sparkles size={20}/> Orbit AI</div><div><span className="eyebrow">PYTHON MIGRATION POC</span><h1>One workspace.<br/>Independent identity.<br/><em>Portable AI.</em></h1><p>A complete host application designed to prove that AI intelligence can be integrated without sharing the host's user database.</p></div><div className="trust-row"><span><ShieldCheck/>Own authentication</span><span><Database/>Own database</span><span><Zap/>AI-ready boundary</span></div></section>
- <section className="auth-panel"><form className="auth-card" onSubmit={submit}><div><span className="eyebrow">{mode==="login"?"WELCOME BACK":"CREATE WORKSPACE"}</span><h2>{mode==="login"?"Sign in to Orbit":"Start your account"}</h2><p>{mode==="login"?"Continue to your private AI workspace.":"Your account lives only in the POC database."}</p></div>
- {mode==="register"&&<label>Full name<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Your name" required/></label>}
- <label>Email<input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="you@company.com" required/></label>
- <label>Password<input type="password" minLength="8" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Minimum 8 characters" required/></label>
- {error&&<div className="error">{error}</div>}<button className="primary" disabled={busy}>{busy?"Please wait...":mode==="login"?"Sign in":"Create account"}<ArrowRight size={18}/></button>
- <button type="button" className="text-button" onClick={()=>{setMode(mode==="login"?"register":"login");setError("")}}>{mode==="login"?"New here? Create an account":"Already have an account? Sign in"}</button></form></section></main>
+function Auth({ onAuth }) {
+  const [mode, setMode] = useState('login');
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function submit(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      const data = await request('/auth/' + mode, { method: 'POST', body: JSON.stringify(form) });
+      saveSession(data);
+      onAuth(data.user);
+    } catch (err) { setError(textOf(err)); }
+    finally { setBusy(false); }
+  }
+  return (
+    <main className="auth-shell">
+      <section className="auth-brand">
+        <div className="logo"><Sparkles size={20}/> Orbit AI</div>
+        <div><span className="eyebrow">INDEPENDENT AI PLATFORM</span>
+          <h1>One workspace.<br/>Your identity.<br/><em>Connected intelligence.</em></h1>
+          <p>Access the AI Agent Studio catalog through a secure backend connection, with Orbit authentication and a separate database.</p>
+        </div>
+        <div className="trust-row"><span><ShieldCheck/> Own login</span><span><Database/> Own database</span><span><Zap/> Shared Agent Studio API</span></div>
+      </section>
+      <section className="auth-panel">
+        <form className="auth-card" onSubmit={submit}>
+          <div><span className="eyebrow">{mode === 'login' ? 'WELCOME BACK' : 'CREATE WORKSPACE'}</span>
+            <h2>{mode === 'login' ? 'Sign in to Orbit' : 'Create your Orbit account'}</h2>
+            <p>No second IRMA login is required.</p>
+          </div>
+          {mode === 'register' && <label>Full name<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} minLength={2} placeholder="Full name"/></label>}
+          <label>Email<input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@company.com"/></label>
+          <label>Password<input type="password" required minLength={8} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Minimum 8 characters"/></label>
+          {error && <div className="error" role="alert">{error}</div>}
+          <button className="primary" disabled={busy}>{busy ? 'Working…' : mode === 'login' ? 'Sign in' : 'Create account'} <ArrowRight size={17}/></button>
+          <button className="text-button" type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}>
+            {mode === 'login' ? 'New here? Create an account' : 'Already registered? Sign in'}
+          </button>
+        </form>
+      </section>
+    </main>
+  );
 }
 
-function Result({item}){
- const r=item.result||item;
- return <div className="result-card"><div className="result-head"><div className="success-icon"><CheckCircle2/></div><div><span className="eyebrow">GENERATED DIRECTION</span><h2>{r.title}</h2><p>{r.summary}</p></div></div>
- <div className="idea-grid">{(r.ideas||[]).map((x,i)=><article className="idea" key={i}><span>0{i+1}</span><h3>{x.title}</h3><p>{x.angle}</p></article>)}</div>
- <div className="outline"><span className="eyebrow">RECOMMENDED OUTLINE</span>{(r.outline||[]).map((x,i)=><div key={i}><b>{String(i+1).padStart(2,"0")}</b>{x}</div>)}</div></div>
+function StatusPill({ ready }) {
+  return <span className={ready ? 'agent-state ready' : 'agent-state blocked'}>
+    <span className="agent-state-dot"/>{ready ? 'External API ready' : 'Not externally enabled'}
+  </span>;
 }
 
-function Workspace({user,onLogout}){
- const [view,setView]=useState("studio"),[items,setItems]=useState([]),[latest,setLatest]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
- const [imageForm,setImageForm]=useState({prompt:"",style:"Auto",purpose:"Campaign Creative",ratio:"1:1"}),[imageBusy,setImageBusy]=useState(false),[imageResult,setImageResult]=useState(null);
- const [form,setForm]=useState({topic:"",audience:"B2B technology leaders",tone:"Professional"});
- const load=()=>request("/generations").then(x=>setItems(x.items)).catch(e=>setError(e.message));
- useEffect(()=>{load()},[]);
- async function generate(e){e.preventDefault();setBusy(true);setError("");try{const data=await request("/generations",{method:"POST",body:JSON.stringify(form)});setLatest(data);await load();}catch(e){setError(e.message)}finally{setBusy(false)}}
- async function remove(id){try{await request("/generations/"+id,{method:"DELETE"});if(latest?.id===id)setLatest(null);await load()}catch(e){setError(e.message)}}
- async function generateImage(e){e.preventDefault();setImageBusy(true);setError("");setImageResult(null);try{const data=await request("/images/generate",{method:"POST",body:JSON.stringify(imageForm)});setImageResult(data)}catch(e){setError(e.message)}finally{setImageBusy(false)}}
- return <div className="app-shell"><aside><div className="logo"><Sparkles size={19}/> Orbit AI</div><nav><button className={view==="studio"?"active":""} onClick={()=>setView("studio")}><LayoutDashboard/>AI Studio</button><button className={view==="images"?"active":""} onClick={()=>setView("images")}><ImageIcon/>Image Generator</button><button className={view==="history"?"active":""} onClick={()=>setView("history")}><History/>History <small>{items.length}</small></button></nav><div className="side-bottom"><div className="user-chip"><div>{user.name[0]?.toUpperCase()}</div><span><b>{user.name}</b><small>{user.email}</small></span></div><button onClick={onLogout}><LogOut/>Sign out</button></div></aside>
- <main className="workspace"><header><div><span className="eyebrow">INDEPENDENT HOST APPLICATION</span><h1>{view==="studio"?"AI Content Studio":view==="images"?"AI Image Generator":"Generation history"}</h1></div><div className="status"><i/> Host DB connected</div></header>
- {error&&<div className="error banner">{error}</div>}
- {view==="images"?<><section className="hero"><div><span className="pill"><ImageIcon/> LIVE IRMA CAPABILITY</span><h2>Create images through the <em>existing AI Agent backend.</em></h2><p>Your Orbit login remains the source of identity. Orbit sends only an opaque user reference across the service boundary; no IRMA login or shared user database is required.</p></div><div className="boundary"><span>ORBIT</span><b>Authenticated user</b><ArrowRight/><span>IRMA</span><b>Service-key boundary</b></div></section>
- <section className="studio-grid"><form className="composer" onSubmit={generateImage}><div className="section-title"><span>01</span><div><h3>Describe your image</h3><p>The request is generated by the existing IRMA Agnes image service.</p></div></div><label>Prompt<textarea value={imageForm.prompt} onChange={e=>setImageForm({...imageForm,prompt:e.target.value})} placeholder="e.g. A futuristic B2B sales command center with AI agents coordinating workflows" required minLength="8"/></label><label>Style<select value={imageForm.style} onChange={e=>setImageForm({...imageForm,style:e.target.value})}>{["Auto","Photorealistic","Cinematic","Professional","Futuristic","Editorial","Illustration","3D","Cartoon"].map(x=><option key={x}>{x}</option>)}</select></label><label>Aspect ratio<select value={imageForm.ratio} onChange={e=>setImageForm({...imageForm,ratio:e.target.value})}>{["1:1","4:5","16:9","9:16","3:2"].map(x=><option key={x}>{x}</option>)}</select></label><button className="primary" disabled={imageBusy}><Sparkles/>{imageBusy?"Generating three candidates...":"Generate images"}</button></form>
- <div className="architecture"><span className="eyebrow">INTEGRATION BOUNDARY</span><h3>No second login. No merged database.</h3><div><ShieldCheck/><p><b>Orbit authenticates the user</b><small>The IRMA service never receives the Orbit JWT or password.</small></p></div><div><Database/><p><b>Databases stay separate</b><small>This image request is stateless on the IRMA side.</small></p></div><div><Zap/><p><b>Existing AI reused</b><small>The same Agnes generation logic powers the existing Image Generator.</small></p></div></div></section>
- {imageResult&&<section className="result-card"><div className="result-head"><div className="success-icon"><CheckCircle2/></div><div><span className="eyebrow">IRMA · {imageResult.provider||"IMAGE SERVICE"}</span><h2>Generated candidates</h2><p>Returned through the isolated service-to-service API.</p></div></div><div className="idea-grid">{(imageResult.candidates||[]).map((x,i)=><article className="idea" key={i}>{x.assetUrl?<img src={x.assetUrl} alt={`Generated candidate ${i+1}`} style={{width:"100%",borderRadius:14,display:"block",marginBottom:12}}/>:<div className="error">Candidate failed: {x.errorMessage||"Provider error"}</div>}<h3>Candidate {i+1}</h3><p>{x.metadata?.perspective||x.status}</p></article>)}</div></section>}</>:view==="studio"?<><section className="hero"><div><span className="pill"><Sparkles/> AI WORKSPACE</span><h2>Turn a rough topic into a <em>clear content direction.</em></h2><p>This POC currently uses its local AI adapter. Later, this exact boundary will call your existing Python AI backend without changing login or the user database.</p></div><div className="boundary"><span>HOST</span><b>Authenticated user</b><ArrowRight/><span>AI BOUNDARY</span><b>Replaceable adapter</b></div></section>
- <section className="studio-grid"><form className="composer" onSubmit={generate}><div className="section-title"><span>01</span><div><h3>What should we create?</h3><p>Give the studio enough context to shape useful directions.</p></div></div><label>Topic or objective<textarea value={form.topic} onChange={e=>setForm({...form,topic:e.target.value})} placeholder="e.g. Explain how AI agents can improve B2B sales operations" required minLength="5"/></label><label>Target audience<input value={form.audience} onChange={e=>setForm({...form,audience:e.target.value})}/></label><label>Tone<select value={form.tone} onChange={e=>setForm({...form,tone:e.target.value})}>{["Professional","Executive","Conversational","Technical"].map(x=><option key={x}>{x}</option>)}</select></label><button className="primary" disabled={busy}><Sparkles/>{busy?"Generating direction...":"Generate content direction"}</button></form>
- <div className="architecture"><span className="eyebrow">WHAT THIS PROVES</span><h3>The host remains in control.</h3><div><ShieldCheck/><p><b>Authentication stays here</b><small>Python never receives your password or session token.</small></p></div><div><Database/><p><b>User data stays here</b><small>Accounts and saved results belong to this POC database.</small></p></div><div><Zap/><p><b>AI is replaceable</b><small>The adapter can switch from local mock to Python without rebuilding the product.</small></p></div></div></section>
- {latest&&<Result item={latest}/>}</>:<section className="history-list">{items.length===0?<div className="empty"><History/><h3>No saved generations yet</h3><p>Create your first direction in AI Studio.</p></div>:items.map(x=><article className="history-item" key={x.id} onClick={()=>{setLatest(x);setView("studio")}}><div><span className="eyebrow">{new Date(x.createdAt+"Z").toLocaleString()} · {x.provider}</span><h3>{x.result.title||x.topic}</h3><p>{x.result.summary}</p></div><button onClick={e=>{e.stopPropagation();remove(x.id)}} aria-label="Delete"><Trash2/></button></article>)}</section>}
- </main></div>
+function Results({ value }) {
+  if (!value) return null;
+  const content = value.output || value;
+  const candidates = Array.isArray(value.candidates) ? value.candidates : [];
+  const summary = content.summary || content.executive_summary || content.direct_answer || content.executive_assessment;
+  return (
+    <section className="studio-response" aria-live="polite">
+      <div className="response-heading"><CheckCircle2 size={21}/><div>
+        <span className="eyebrow">AGENT RESPONSE</span><h3>{String(value.status || content.status || 'Request completed').replaceAll('_', ' ')}</h3>
+      </div></div>
+      {summary && <p className="response-summary">{summary}</p>}
+      {candidates.length > 0 && <div className="candidate-grid">
+        {candidates.map((candidate, index) => (
+          <article className="candidate" key={candidate.index ?? index}>
+            {typeof candidate.assetUrl === 'string' && /^https?:\/\//i.test(candidate.assetUrl)
+              ? <img src={candidate.assetUrl} loading="lazy" alt={'Generated image candidate ' + (index + 1)}/>
+              : <div className="candidate-empty"><ImageIcon/><span>{candidate.errorMessage || 'Image not available'}</span></div>}
+            <strong>Candidate {index + 1}</strong>
+            <span>{candidate.metadata?.perspective || candidate.status || 'Image result'}</span>
+          </article>
+        ))}
+      </div>}
+      {Array.isArray(content.missing_inputs) && content.missing_inputs.length > 0 && <div className="response-notice">
+        {content.missing_inputs.map((entry, index) => <p key={index}>{entry.field_name || 'Missing input'}: {entry.description || ''}</p>)}
+      </div>}
+      <details className="response-raw"><summary>View full structured response</summary><pre>{JSON.stringify(value, null, 2)}</pre></details>
+    </section>
+  );
 }
 
-function App(){const [user,setUser]=useState(()=>{try{return JSON.parse(localStorage.getItem("poc_user"))}catch{return null}});useEffect(()=>{if(user&&localStorage.getItem("poc_token"))request("/me").then(x=>setUser(x.user)).catch(()=>{clearSession();setUser(null)})},[]);return user?<Workspace user={user} onLogout={()=>{clearSession();setUser(null)}}/>:<Auth onAuth={setUser}/>;}
-createRoot(document.getElementById("root")).render(<App/>);
+function DemoResult({ item }) {
+  if (!item) return null;
+  const result = item.result || item;
+  return <section className="result-card">
+    <div className="result-head"><div className="success-icon"><CheckCircle2/></div><div>
+      <span className="eyebrow">LOCAL DEMO OUTPUT</span><h2>{result.title}</h2><p>{result.summary}</p></div></div>
+    <div className="idea-grid">{(result.ideas || []).map((idea, index) => <article className="idea" key={index}>
+      <span>{String(index + 1).padStart(2, '0')}</span><h3>{idea.title}</h3><p>{idea.angle}</p></article>)}</div>
+    <div className="outline"><span className="eyebrow">SUGGESTED OUTLINE</span>{(result.outline || []).map((line, index) => <div key={index}><b>{index + 1}</b>{line}</div>)}</div>
+  </section>;
+}
+
+function Workspace({ user, onLogout }) {
+  const [view, setView] = useState('catalog');
+  const [catalog, setCatalog] = useState(null);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [catalogError, setCatalogError] = useState('');
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All categories');
+  const [availability, setAvailability] = useState('all');
+  const [selected, setSelected] = useState(null);
+  const [contract, setContract] = useState(null);
+  const [loadingContract, setLoadingContract] = useState(false);
+  const [agentError, setAgentError] = useState('');
+  const [jsonInput, setJsonInput] = useState('{}');
+  const [imageInput, setImageInput] = useState(imageDefault);
+  const [running, setRunning] = useState(false);
+  const [output, setOutput] = useState(null);
+  const selectionSerial = useRef(0);
+
+  const [saved, setSaved] = useState([]);
+  const [demo, setDemo] = useState({ topic: '', audience: 'B2B technology leaders', tone: 'Professional' });
+  const [demoError, setDemoError] = useState('');
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [latest, setLatest] = useState(null);
+
+  async function loadCatalog() {
+    setLoadingCatalog(true);
+    setCatalogError('');
+    try {
+      const data = await request('/agents/catalog');
+      if (!Array.isArray(data.agents)) throw new Error('Agent Studio returned an invalid catalog.');
+      setCatalog(data);
+    } catch (err) {
+      setCatalogError(textOf(err));
+      setCatalog(null);
+    } finally { setLoadingCatalog(false); }
+  }
+  async function loadSaved() {
+    try { const data = await request('/generations'); setSaved(data.items || []); }
+    catch (err) { setDemoError(textOf(err)); }
+  }
+  useEffect(() => { void loadCatalog(); void loadSaved(); }, []);
+
+  const agents = catalog?.agents || [];
+  const availableCount = agents.filter(a => a.externalApi).length;
+  const categories = useMemo(() => ['All categories', ...new Set(agents.map(a => a.category || 'Other'))].sort((a, b) => a === 'All categories' ? -1 : b === 'All categories' ? 1 : a.localeCompare(b)), [catalog]);
+  const filteredAgents = useMemo(() => agents.filter(agent => {
+    if (category !== 'All categories' && (agent.category || 'Other') !== category) return false;
+    if (availability === 'ready' && !agent.externalApi) return false;
+    if (availability === 'blocked' && agent.externalApi) return false;
+    const key = search.toLowerCase().trim();
+    return !key || [agent.name, agent.id, agent.category, agent.description, agent.capabilityId].some(value => String(value || '').toLowerCase().includes(key));
+  }), [catalog, search, category, availability]);
+
+  async function openAgent(agent) {
+    const serial = ++selectionSerial.current;
+    setSelected(agent); setContract(null); setAgentError(''); setOutput(null);
+    setJsonInput('{}'); setImageInput(imageDefault);
+    if (!agent.externalApi) return;
+    setLoadingContract(true);
+    try {
+      const details = await request('/agents/' + encodeURIComponent(agent.id) + '/contract');
+      if (serial !== selectionSerial.current) return;
+      setContract(details);
+      if (details.mode === 'generate') setImageInput({ ...imageDefault, ...(details.exampleInput || {}) });
+      else setJsonInput(JSON.stringify(details.exampleInput || {}, null, 2));
+    } catch (err) {
+      if (serial === selectionSerial.current) setAgentError(textOf(err));
+    } finally {
+      if (serial === selectionSerial.current) setLoadingContract(false);
+    }
+  }
+  function backToCatalog() {
+    selectionSerial.current += 1;
+    setSelected(null); setContract(null); setOutput(null); setAgentError(''); setLoadingContract(false);
+  }
+  async function runAgent(event) {
+    event.preventDefault();
+    if (!selected?.externalApi || !contract) return;
+    setAgentError(''); setOutput(null);
+    let data;
+    try {
+      data = contract.mode === 'generate' ? imageInput : JSON.parse(jsonInput);
+      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Input must be a JSON object.');
+    } catch {
+      setAgentError('Enter valid JSON request data before running the agent.');
+      return;
+    }
+    const operation = contract.operations?.find(op => op.name === contract.mode);
+    if (!operation) { setAgentError('This agent has no supported external operation.'); return; }
+    setRunning(true);
+    try {
+      const response = await request('/agents/' + encodeURIComponent(selected.id) + '/' + encodeURIComponent(operation.name), {
+        method: 'POST', body: JSON.stringify({ input: data }),
+      });
+      setOutput(response);
+    } catch (err) { setAgentError(textOf(err)); }
+    finally { setRunning(false); }
+  }
+  async function generateDemo(event) {
+    event.preventDefault(); setDemoError(''); setDemoBusy(true);
+    try {
+      const response = await request('/generations', { method: 'POST', body: JSON.stringify(demo) });
+      setLatest(response); await loadSaved();
+    } catch (err) { setDemoError(textOf(err)); }
+    finally { setDemoBusy(false); }
+  }
+  async function removeSaved(id) {
+    try {
+      await request('/generations/' + id, { method: 'DELETE' });
+      if (latest?.id === id) setLatest(null);
+      await loadSaved();
+    } catch (err) { setDemoError(textOf(err)); }
+  }
+
+  return (
+    <div className="app-shell">
+      <aside>
+        <div className="logo"><Sparkles size={20}/> Orbit AI</div>
+        <nav aria-label="Workspace navigation">
+          <button className={view === 'catalog' ? 'active' : ''} onClick={() => { setView('catalog'); backToCatalog(); }}>
+            <Layers3/> AI Agent Studio {catalog && <small>{agents.length}</small>}
+          </button>
+          <button className={view === 'sandbox' ? 'active' : ''} onClick={() => setView('sandbox')}><Braces/> Local demo</button>
+          <button className={view === 'history' ? 'active' : ''} onClick={() => setView('history')}><History/> Demo history <small>{saved.length}</small></button>
+        </nav>
+        <div className="side-bottom">
+          <div className="user-chip"><div>{user?.name?.[0]?.toUpperCase() || 'O'}</div><span><b>{user?.name || 'Orbit user'}</b><small>{user?.email}</small></span></div>
+          <button onClick={onLogout}><LogOut/> Sign out</button>
+        </div>
+      </aside>
+      <main className="workspace">
+        <header className="page-header">
+          <div><span className="eyebrow">ORBIT / EXTERNAL AI PLATFORM</span>
+            <h1>{view === 'catalog' ? 'AI Agent Studio' : view === 'sandbox' ? 'Local sandbox' : 'Saved demo history'}</h1></div>
+          <span className="status"><i/> Orbit database connected</span>
+        </header>
+
+        {view === 'catalog' && !selected && <>
+          <section className="catalog-hero">
+            <div><span className="pill"><Server size={14}/> API-CONNECTED AGENT WORKSPACE</span>
+              <h2>One integration.<br/><em>Your complete agent catalog.</em></h2>
+              <p>Discover all agents from the existing AI Agent Studio. Workflows requiring extra permissions remain visible and clearly marked until a safe external adapter is available.</p>
+            </div>
+            <div className="hero-shield"><LockKeyhole size={28}/><b>Server-side API access</b><span>The platform key stays in Orbit Node. Your login and data remain here.</span></div>
+          </section>
+          <div className="catalog-stats">
+            <div><span>Discovered agents</span><strong>{catalog ? catalog.count : '—'}</strong><small>From live Studio catalog</small></div>
+            <div><span>External API ready</span><strong>{catalog ? availableCount : '—'}</strong><small>Real API operations</small></div>
+            <div><span>Awaiting adapter</span><strong>{catalog ? agents.length - availableCount : '—'}</strong><small>Not silently omitted</small></div>
+          </div>
+          {catalogError && <div className="catalog-alert" role="alert"><AlertCircle/><div><b>Cannot load the real Agent Studio catalog</b><p>{catalogError} Orbit login and your local database remain available.</p></div><button onClick={loadCatalog}>Retry</button></div>}
+          <div className="catalog-toolbar">
+            <label className="catalog-search"><Search size={18}/><input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search all agents, categories, or capabilities" aria-label="Search all agents"/></label>
+            <select aria-label="Filter by category" value={category} onChange={e => setCategory(e.target.value)}>
+              {categories.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+            <select aria-label="Filter by API availability" value={availability} onChange={e => setAvailability(e.target.value)}>
+              <option value="all">All agents</option><option value="ready">API ready</option><option value="blocked">Needs adapter</option>
+            </select>
+            <button className="refresh-btn" onClick={loadCatalog} disabled={loadingCatalog}><RefreshCw size={16}/> Refresh</button>
+          </div>
+          <div className="catalog-list-heading"><h3>{loadingCatalog ? 'Loading agents…' : filteredAgents.length + ' agents'}</h3><span>{catalog ? 'Live metadata via Orbit Node' : 'Waiting for Agent Studio'}</span></div>
+          {!loadingCatalog && catalog && filteredAgents.length === 0 && <div className="catalog-empty">No agents match your search or filters.</div>}
+          <section className="agent-grid" aria-label="AI Agent Studio catalog">
+            {filteredAgents.map(agent => <button className="agent-tile" key={agent.id} onClick={() => openAgent(agent)}>
+              <span className="tile-top"><span className="tile-icon">{agent.mode === 'generate' ? <ImageIcon/> : agent.externalApi ? <Activity/> : <Layers3/>}</span><StatusPill ready={agent.externalApi}/></span>
+              <span className="tile-category">{agent.category || 'Agent Studio'}</span>
+              <strong>{agent.name}</strong><span className="tile-description">{agent.description || 'Agent workflow and capability.'}</span>
+              <span className="tile-foot"><small>{agent.externalApi ? 'Open external agent' : 'View integration status'}</small><ArrowUpRight size={16}/></span>
+            </button>)}
+          </section>
+        </>}
+
+        {view === 'catalog' && selected && <section className="agent-workspace">
+          <button className="back-link" onClick={backToCatalog}><ChevronLeft size={16}/> All agents</button>
+          <div className="agent-detail-intro"><div>
+            <span className="eyebrow">{selected.category || 'AI AGENT STUDIO'}</span>
+            <h2>{selected.name}</h2><p>{selected.description || 'An existing Agent Studio capability.'}</p>
+          </div><StatusPill ready={selected.externalApi}/></div>
+          <div className="execution-layout">
+            <div className="execution-panel">
+              {selected.externalApi ? <>
+                <div className="execution-title"><Play size={19}/><div><h3>Run existing agent</h3><p>Orbit calls the real Agent Studio API using your Orbit session.</p></div></div>
+                {loadingContract ? <p className="muted">Loading the actual API contract…</p> :
+                  <form onSubmit={runAgent}>
+                    {contract?.mode === 'generate' ? <>
+                      <label>Creative prompt<textarea required minLength={8} value={imageInput.prompt} onChange={e => setImageInput({ ...imageInput, prompt: e.target.value })}/></label>
+                      <div className="form-split">
+                        <label>Visual style<input value={imageInput.style} maxLength={50} onChange={e => setImageInput({ ...imageInput, style: e.target.value })}/></label>
+                        <label>Aspect ratio<select value={imageInput.ratio} onChange={e => setImageInput({ ...imageInput, ratio: e.target.value })}>{['Auto','1:1','4:5','16:9','9:16','3:2'].map(x => <option key={x}>{x}</option>)}</select></label>
+                      </div>
+                      <label>Campaign purpose<input maxLength={50} value={imageInput.purpose} onChange={e => setImageInput({ ...imageInput, purpose: e.target.value })}/></label>
+                    </> : <>
+                      <label>Input data <span className="label-note">JSON · loaded from the existing API contract</span>
+                        <textarea className="json-editor" spellCheck={false} value={jsonInput} onChange={e => setJsonInput(e.target.value)} required aria-label="Agent input JSON"/></label>
+                    </>}
+                    <button className="primary" disabled={running || !contract}>
+                      <Zap size={17}/>{running ? 'Executing existing agent…' : 'Run through Agent Studio API'}
+                    </button>
+                  </form>}
+              </> : <div className="blocked-workflow"><LockKeyhole size={26}/><h3>External adapter not available</h3>
+                <p>This agent is present in the real Agent Studio catalog but requires a permission-aware API adapter. A platform key alone does not grant access to another user's saved data or connected accounts.</p>
+                <div>{selected.reason || 'This workflow is not available for external execution yet.'}</div>
+              </div>}
+              {agentError && <div className="catalog-alert compact" role="alert"><AlertCircle size={18}/><span>{agentError}</span></div>}
+            </div>
+            <div className="contract-panel"><span className="eyebrow">INTEGRATION DETAILS</span>
+              <h3>How this agent connects</h3>
+              <div className="contract-row"><span>Agent ID</span><code>{selected.id}</code></div>
+              <div className="contract-row"><span>Execution</span><b>{selected.externalApi ? selected.mode : 'Requires adapter'}</b></div>
+              <div className="contract-row"><span>Source</span><b>{selected.source === 'workspace-only' ? 'Agent Studio workspace' : 'Live Agent Studio catalog'}</b></div>
+              <div className="contract-row"><span>Access</span><b>{selected.externalApi ? 'One server API key' : 'Scoped integration needed'}</b></div>
+              {selected.coverage && <div className="contract-caveat">{selected.coverage}</div>}
+              <div className="contract-boundary"><ShieldCheck size={20}/><p><strong>No second login</strong><span>Requests flow through Orbit Node. The external API key is never sent to the browser.</span></p></div>
+            </div>
+          </div>
+          <Results value={output}/>
+        </section>}
+
+        {view === 'sandbox' && <div className="demo-view">
+          <section className="catalog-hero"><div><span className="pill"><Braces size={14}/> LOCAL DEMONSTRATION</span>
+            <h2>Orbit's own <em>content sandbox.</em></h2>
+            <p>This independent mock workflow is not represented as an IRMA agent. It demonstrates local Orbit accounts, generation history and database persistence.</p></div></section>
+          <section className="studio-grid">
+            <form className="composer" onSubmit={generateDemo}>
+              <div className="section-title"><span>01</span><div><h3>Generate content direction</h3><p>Stored in Orbit's own database.</p></div></div>
+              <label>Topic or objective<textarea required minLength={5} value={demo.topic} onChange={e => setDemo({ ...demo, topic: e.target.value })} placeholder="e.g. AI operations for enterprise teams"/></label>
+              <label>Audience<input value={demo.audience} onChange={e => setDemo({ ...demo, audience: e.target.value })}/></label>
+              <label>Tone<select value={demo.tone} onChange={e => setDemo({ ...demo, tone: e.target.value })}>{['Professional','Executive','Conversational','Technical'].map(x => <option key={x}>{x}</option>)}</select></label>
+              <button className="primary" disabled={demoBusy}><Sparkles size={18}/>{demoBusy ? 'Generating…' : 'Generate local demo'}</button>
+            </form>
+            <div className="architecture"><span className="eyebrow">SEPARATE DATABASES</span><h3>Independent host boundary</h3>
+              <div><ShieldCheck/><p><b>Orbit authentication</b><small>Your session and password remain in Orbit.</small></p></div>
+              <div><Database/><p><b>Orbit SQLite</b><small>Demo history is saved locally under your account.</small></p></div>
+              <div><Server/><p><b>Agent Studio API</b><small>Real agents are available from the catalog, not copied here.</small></p></div>
+            </div>
+          </section>
+          {demoError && <div className="catalog-alert compact" role="alert"><AlertCircle size={18}/>{demoError}</div>}
+          <DemoResult item={latest}/>
+        </div>}
+
+        {view === 'history' && <section className="history-list">
+          <div className="section-title"><History/><div><h3>Orbit local demo history</h3><p>These records are stored in Orbit, not the IRMA database.</p></div></div>
+          {demoError && <div className="error" role="alert">{demoError}</div>}
+          {saved.length === 0 ? <div className="empty"><History size={28}/><h3>No saved demo generations</h3><p>Use the local demo to add one.</p></div>
+            : saved.map(item => <article className="history-item" key={item.id}>
+              <div><span className="eyebrow">{item.createdAt} · {item.provider}</span><h3>{item.result?.title || item.topic}</h3><p>{item.result?.summary}</p>
+                <button className="history-open" onClick={() => { setLatest(item); setView('sandbox'); }}>Open demo</button>
+              </div><button aria-label="Delete saved demo" onClick={() => removeSaved(item.id)}><Trash2 size={18}/></button>
+            </article>)}
+        </section>}
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('poc_user')); } catch { return null; }
+  });
+  useEffect(() => {
+    if (user && localStorage.getItem('poc_token')) {
+      request('/me').then(data => setUser(data.user)).catch(() => { clearSession(); setUser(null); });
+    }
+  }, []);
+  return user ? <Workspace user={user} onLogout={() => { clearSession(); setUser(null); }}/> : <Auth onAuth={setUser}/>;
+}
+createRoot(document.getElementById('root')).render(<App/>);
