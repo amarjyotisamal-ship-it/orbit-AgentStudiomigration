@@ -1,4 +1,8 @@
-import dotenv from "dotenv";\nimport path from "node:path";\nimport { fileURLToPath } from "node:url";\nconst here = path.dirname(fileURLToPath(import.meta.url));\ndotenv.config({ path: path.join(here, "..", "..", ".env") });
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const here = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(here, "..", "..", ".env") });
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -6,7 +10,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "./db.js";
 import { issueToken, requireAuth } from "./auth.js";
-import { generateContent, generateImage } from "./aiAdapter.js";
+import { generateContent } from "./aiAdapter.js";
+import { getStudioCatalog, getAgentContract, executeStudioAgent, AgentStudioUpstreamError } from "./agentStudioClient.js";
 
 const app = express();
 const port = Number(process.env.PORT || 5101);
@@ -25,16 +30,9 @@ const generateSchema = z.object({
   tone: z.enum(["Professional", "Executive", "Conversational", "Technical"]).default("Professional")
 });
 
-const imageSchema = z.object({
-  prompt: z.string().trim().min(8).max(4000),
-  style: z.string().trim().max(50).default("Auto"),
-  purpose: z.string().trim().max(50).default("Campaign Creative"),
-  ratio: z.enum(["Auto", "1:1", "4:5", "16:9", "9:16", "3:2"]).default("1:1")
-});
-
 const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, createdAt: u.created_at });
 
-app.get("/api/health", (_req, res) => res.json({ status: "ok", database: "sqlite", aiMode: process.env.AI_MODE || "mock" }));
+app.get("/api/health", (_req, res) => res.json({ status: "ok", database: "sqlite", aiMode: process.env.AI_MODE || "mock", agentStudioConfigured: Buffer.byteLength(String(process.env.AI_AGENT_STUDIO_API_KEY || ""), "utf8") >= 32 }));
 
 app.post("/api/auth/register", async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
@@ -83,16 +81,40 @@ app.post("/api/generations", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/api/images/generate", requireAuth, async (req, res) => {
-  const parsed = imageSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
-  try {
-    const result = await generateImage(parsed.data, { userRef: `poc-user-${Number(req.identity.sub)}` });
-    res.json(result);
-  } catch (error) {
-    console.error("Image generation failed:", error.message);
-    res.status(502).json({ error: "Image generation is currently unavailable. Your Orbit account and database are unchanged." });
+// The browser can only access Orbit JWT routes; the studio API key never leaves Node.
+const orbitUser = (req) => {
+  const id = Number(req.identity?.sub);
+  return Number.isSafeInteger(id) && id > 0 && db.prepare("SELECT id FROM users WHERE id = ?").get(id) ? id : null;
+};
+const studioError = (res, error) => res.status(error instanceof AgentStudioUpstreamError ? error.status : 502)
+  .json({ error: error instanceof AgentStudioUpstreamError ? error.message : "AI Agent Studio is temporarily unavailable." });
+
+app.get("/api/agents/catalog", requireAuth, async (req, res) => {
+  if (!orbitUser(req)) return res.status(401).json({ error: "Account no longer available." });
+  try { res.json(await getStudioCatalog()); }
+  catch (error) { studioError(res, error); }
+});
+
+app.get("/api/agents/:agentId/contract", requireAuth, async (req, res) => {
+  if (!orbitUser(req)) return res.status(401).json({ error: "Account no longer available." });
+  try { res.json(await getAgentContract(req.params.agentId)); }
+  catch (error) { studioError(res, error); }
+});
+
+app.post("/api/agents/:agentId/:action", requireAuth, async (req, res) => {
+  const userId = orbitUser(req);
+  if (!userId) return res.status(401).json({ error: "Account no longer available." });
+  if (!req.body || Object.keys(req.body).some(k => k !== 'input')) {
+    return res.status(422).json({ error: "Supply an input object only. Orbit provides verified context." });
   }
+  try {
+    res.json(await executeStudioAgent({
+      agentId: req.params.agentId,
+      action: req.params.action,
+      input: req.body.input,
+      userId,
+    }));
+  } catch (error) { studioError(res, error); }
 });
 
 app.delete("/api/generations/:id", requireAuth, (req, res) => {

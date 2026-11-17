@@ -48,26 +48,3 @@ export async function generateContent(input, context) {
     clearTimeout(timer);
   }
 }
-
-
-export async function generateImage(input, context) {
-  const base = process.env.IRMA_IMAGE_API_URL || process.env.IRMA_NODE_URL;
-  const key = process.env.IRMA_IMAGE_SERVICE_KEY;
-  if (!base || !key) throw new Error("IRMA image integration is not configured");
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 135000);
-  try {
-    const response = await fetch(`${base.replace(/\/$/, "")}/api/integrations/image-generation/generate`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-service-key": key },
-      body: JSON.stringify({ context, input }),
-      signal: controller.signal
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.message || `IRMA image service returned ${response.status}`);
-    return body;
-  } finally {
-    clearTimeout(timer);
-  }
-}

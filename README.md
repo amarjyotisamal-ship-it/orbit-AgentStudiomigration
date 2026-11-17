@@ -1,91 +1,95 @@
-# Orbit AI — Python Migration POC
+# Orbit AI — Independent Host / AI Agent Studio External API POC
 
-Standalone dynamic web application for proving that an independently authenticated host product can later consume IRMA Python AI intelligence without sharing its login or user database.
-
-**Milestone 1 intentionally does not copy or connect Ishvara/IRMA Python code.** It proves the host application end to end and leaves a controlled AI boundary for the next phase.
-
-## Implemented
-
-- React/Vite responsive frontend
-- Registration and login
-- bcrypt password hashing
-- JWT-protected APIs
-- Independent SQLite user/content database
-- User-scoped saved generations
-- AI Content Studio workflow
-- Persistent history and delete
-- Session restoration and health endpoint
-- Local deterministic AI adapter for zero-key testing
-- Isolated Python-service adapter ready for phase 2
-- No committed secrets
+Orbit is an independent host app. Its own Node backend authenticates users,
+stores accounts and local sandbox history in its SQLite database, and calls the
+**real AI Agent Studio** over a shared external API credential. No separate IRMA
+login, shared user database, copied agent business logic, iframe, or redirect.
 
 ## Architecture
 
-```text
-Browser / React
-      |
-      v
-POC Node backend
-  |         |
-  |         +--> SQLite (users + saved generations)
-  |
-  +--> AI adapter
-          |
-          +--> mock       [current POC]
-          |
-          +--> Python API [next phase]
+```
+Browser -> Orbit JWT -> Orbit Node/SQLite -> X-API-Key -> IRMA Node API
+                                                   |-> Agnes stateless image
+                                                   |-> IRMA Python analytics
 ```
 
-The host owns authentication, authorization, users and persistence. The future Python service receives only a trusted opaque user reference plus AI input.
+The browser receives only safe catalog metadata and agent output; the API key
+is only read by the Orbit Node process. The real Agent Studio backend owns
+execution. The live catalog includes **every available DB agent plus workspace-
+only catalog cards** that were present at the source audit. Some require their
+own per-user IRMA authorization and are explicitly marked `blocked` instead
+of being opened unsafely under a platform-level key.
 
 ## Run on Windows
 
-Prerequisite: Node.js 20+.
+Requirements: Node.js 20+, both IRMA Node (:5001) and Python (:8001) for Python
+analytics, plus the existing provider configuration for live image generation.
 
 ```powershell
-git clone https://github.com/amarjyotisamal-ship-it/python-migration.git
-cd python-migration
+git pull
+# Configure the same locally generated AI_AGENT_STUDIO_API_KEY in:
+# 1. Ishvara-Tech/aiagent-backend/.env
+# 2. python-migration/.env
 .\run.ps1
 ```
 
-The launcher creates a local `.env` with a random JWT secret, installs missing dependencies and starts both services.
+Orbit frontend: http://127.0.0.1:3002  
+Orbit backend: http://127.0.0.1:5101/api/health
 
-Open:
-- Frontend: http://127.0.0.1:3002
-- Backend health: http://127.0.0.1:5001/api/health
+On first run the launcher creates `.env` from `.env.example` if absent. On
+existing installations it never overwrites local secrets. Set:
 
-## Acceptance flow
-
-1. Register a new account.
-2. Sign in.
-3. Open AI Studio.
-4. Enter a topic, audience and tone.
-5. Generate a content direction.
-6. Confirm three ideas plus an outline appear.
-7. Open History and confirm the result is saved.
-8. Sign out and sign back in.
-9. Confirm the same history remains.
-10. Delete a generation and confirm it disappears.
-
-The local database is `backend/data/poc.sqlite` and is git-ignored.
-
-## AI boundary
-
-`backend/src/aiAdapter.js` is the only application module that knows how AI is reached.
-
-Current:
 ```env
-AI_MODE=mock
+AI_AGENT_STUDIO_URL=http://127.0.0.1:5001
+AI_AGENT_STUDIO_API_KEY=<same-platform-secret-as-IRMA-node>
 ```
 
-Next phase:
+The **IRMA** Node backend independently needs:
 ```env
-AI_MODE=python
-PYTHON_AI_URL=http://127.0.0.1:8001
-PYTHON_AI_SERVICE_KEY=...
+AI_AGENT_STUDIO_API_KEY=<same-platform-secret>
+PYTHON_SERVICE_URL=http://127.0.0.1:8001
+IRMA_SERVICE_SECRET=<pre-existing-shared-Node-Python-secret>
+AGNES_API_KEY=<existing-provider-secret>
 ```
+Python must have the matching `IRMA_SERVICE_SECRET` for its eight analytics
+workflows. Production requires HTTPS and separate partner-scoped managed keys,
+not one universal partner secret.
 
-Python mode is designed to call `POST /v1/content/ideas` with an `X-Service-Key` and a small body containing an opaque `userRef` plus topic/audience/tone. We will adapt the real IRMA Python Content Studio only after this standalone host is verified locally.
+## What to check
+
+1. Register/login Orbit: no IRMA login required; accounts stay in SQLite.
+2. Open **AI Agent Studio**. Orbit Node calls the authenticated IRMA catalog.
+3. Verify all catalog entries display, including contributor agents with
+   `Not yet connected` status when no safe external adapter exists.
+4. Pick an enabled analytics agent, view the real API contract and run the
+   example input or paste your own JSON.
+5. Pick Image Generator and run a prompt, receiving Agnes candidates if
+   provider keys are configured.
+6. Stop IRMA Node: Orbit should show an error without losing login/database.
+7. Wrong or missing key: IRMA returns 401; Orbit passes a safe error.
+8. Orbit has a separate **Local Sandbox** for its original mock content demo;
+   this is not falsely presented as a real IRMA agent.
+
+## API verification outside Orbit
+
+The IRMA Node external API is at `http://127.0.0.1:5001/api/v1/agents`.
+See the private IRMA backend `docs/external-agent-studio-api.md` for working
+cURL examples. Postman collection with an entry for **every catalog agent**:
+```powershell
+curl.exe -H "X-API-Key: YOUR_LOCAL_KEY" http://127.0.0.1:5001/api/v1/agents/postman-collection -o AI-Agent-Studio-External-API.postman_collection.json
+```
+This export contains no actual API key. Import it and set `api_key` locally.
+
+## Boundaries
+
+- No private Ishvara source code is copied into this **public** POC repo.
+- Local Orbit users cannot pretend to be IRMA users via the platform key.
+- The host supplies only its verified opaque user reference on Node-to-Node calls.
+- External API is currently enabled for eight submitted-data analytics
+  workflows and stateless Image Generation. Others are cataloged but need
+  permission-aware adapters before execution (no fake successful endpoints).
+- Existing Orbit history and local mock content demo remain usable.
+- No remote send/publish/calendar side effects are triggered by catalog calls.
 
 ## Validation
 
@@ -93,9 +97,4 @@ Python mode is designed to call `POST /v1/content/ideas` with an `X-Service-Key`
 npm test --prefix backend
 npm run build --prefix frontend
 ```
-
-## Security scope
-
-This is a local architecture POC, not a production identity design. Production should add the team's approved auth/token strategy, managed secrets, HTTPS, rate limiting, observability, production database lifecycle and workload/service identity for Node-to-Python calls.
-
-No code here modifies any Ishvara repository.
+Live integration still requires both local services and configured provider keys.

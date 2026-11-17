@@ -6,6 +6,6 @@ export async function request(path, options={}) {
   const res = await fetch(API+path,{...options,headers});
   if (res.status===204) return null;
   const body = await res.json().catch(()=>({}));
-  if (!res.ok) throw new Error(body.error || "Request failed");
+  if (!res.ok) throw new Error((typeof body.error === "string" ? body.error : body.error?.message) || body.message || "Request failed");
   return body;
 }

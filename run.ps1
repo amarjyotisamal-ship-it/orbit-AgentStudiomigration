@@ -16,6 +16,6 @@ if (-not (Test-Path "frontend/node_modules")) { npm install --prefix frontend }
 Write-Host ""
 Write-Host "Starting Orbit AI POC..."
 Write-Host "Frontend: http://127.0.0.1:3002"
-Write-Host "Backend:  http://127.0.0.1:5001"
+Write-Host "Backend:  http://127.0.0.1:5101"
 Write-Host ""
 npm run dev
