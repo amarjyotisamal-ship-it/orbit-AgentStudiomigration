@@ -135,6 +135,7 @@ function Workspace({ user, onLogout }) {
   const [imageInput, setImageInput] = useState(imageDefault);
   const [running, setRunning] = useState(false);
   const [output, setOutput] = useState(null);
+  const [operationName, setOperationName] = useState('');
   const selectionSerial = useRef(0);
 
   const [saved, setSaved] = useState([]);
@@ -175,15 +176,17 @@ function Workspace({ user, onLogout }) {
   async function openAgent(agent) {
     const serial = ++selectionSerial.current;
     setSelected(agent); setContract(null); setAgentError(''); setOutput(null);
-    setJsonInput('{}'); setImageInput(imageDefault);
+    setJsonInput('{}'); setImageInput(imageDefault); setOperationName('');
     if (!agent.externalApi) return;
     setLoadingContract(true);
     try {
       const details = await request('/agents/' + encodeURIComponent(agent.id) + '/contract');
       if (serial !== selectionSerial.current) return;
       setContract(details);
+      const firstAction = details.operations?.[0]?.name || details.mode || '';
+      setOperationName(firstAction);
       if (details.mode === 'generate') setImageInput({ ...imageDefault, ...(details.exampleInput || {}) });
-      else setJsonInput(JSON.stringify(details.exampleInput || {}, null, 2));
+      else setJsonInput(JSON.stringify(details.examples?.[firstAction] || details.exampleInput || {}, null, 2));
     } catch (err) {
       if (serial === selectionSerial.current) setAgentError(textOf(err));
     } finally {
@@ -206,7 +209,7 @@ function Workspace({ user, onLogout }) {
       setAgentError('Enter valid JSON request data before running the agent.');
       return;
     }
-    const operation = contract.operations?.find(op => op.name === contract.mode);
+    const operation = contract.operations?.find(op => op.name === operationName);
     if (!operation) { setAgentError('This agent has no supported external operation.'); return; }
     setRunning(true);
     try {
@@ -304,6 +307,15 @@ function Workspace({ user, onLogout }) {
                 <div className="execution-title"><Play size={19}/><div><h3>Run existing agent</h3><p>Orbit calls the real Agent Studio API using your Orbit session.</p></div></div>
                 {loadingContract ? <p className="muted">Loading the actual API contract…</p> :
                   <form onSubmit={runAgent}>
+                    {contract?.operations?.length > 1 && <label>Operation
+                      <select value={operationName} onChange={event => {
+                        const action = event.target.value;
+                        setOperationName(action); setOutput(null);
+                        setJsonInput(JSON.stringify(contract.examples?.[action] || {}, null, 2));
+                      }}>
+                        {contract.operations.map(op => <option key={op.name} value={op.name}>{op.name === 'ideate' ? 'Generate ideas' : op.name === 'outline' ? 'Generate outline' : op.name}</option>)}
+                      </select>
+                    </label>}
                     {contract?.mode === 'generate' ? <>
                       <label>Creative prompt<textarea required minLength={8} value={imageInput.prompt} onChange={e => setImageInput({ ...imageInput, prompt: e.target.value })}/></label>
                       <div className="form-split">

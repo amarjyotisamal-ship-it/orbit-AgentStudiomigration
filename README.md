@@ -86,7 +86,8 @@ This export contains no actual API key. Import it and set `api_key` locally.
 - Local Orbit users cannot pretend to be IRMA users via the platform key.
 - The host supplies only its verified opaque user reference on Node-to-Node calls.
 - External API is currently enabled for eight submitted-data analytics
-  workflows and stateless Image Generation. Others are cataloged but need
+  workflows, stateless Image Generation, Content Studio ideation/outlines,
+  and Webinar Conversion AI planning. Others are cataloged but need
   permission-aware adapters before execution (no fake successful endpoints).
 - Existing Orbit history and local mock content demo remain usable.
 - No remote send/publish/calendar side effects are triggered by catalog calls.

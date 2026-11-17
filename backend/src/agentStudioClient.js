@@ -1,6 +1,6 @@
 // Orbit owns authentication. The AI Agent Studio key is confined to this Node process.
 const agentKeyPattern = /^[A-Za-z0-9_.-]{1,120}$/;
-const allowedActions = new Set(['analyze', 'generate']);
+const allowedActions = new Set(['analyze', 'generate', 'ideate', 'outline', 'plan']);
 
 export class AgentStudioUpstreamError extends Error {
   constructor(status, message) {
