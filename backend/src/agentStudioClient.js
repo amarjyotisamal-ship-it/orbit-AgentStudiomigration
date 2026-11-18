@@ -1,4 +1,4 @@
-// Orbit owns authentication. The AI Agent Studio key is confined to this Node process.
+// Orbit owns authentication. The Agent Studio project credentials are confined to this Node process.
 const agentKeyPattern = /^[A-Za-z0-9_.-]{1,120}$/;
 const allowedActions = new Set(['analyze', 'generate', 'ideate', 'outline', 'plan']);
 
@@ -12,9 +12,10 @@ export class AgentStudioUpstreamError extends Error {
 
 function serviceConfig() {
   const base = String(process.env.AI_AGENT_STUDIO_URL || 'http://127.0.0.1:5001').trim();
-  const key = String(process.env.AI_AGENT_STUDIO_API_KEY || '');
-  if (Buffer.byteLength(key, 'utf8') < 32) {
-    throw new AgentStudioUpstreamError(503, 'AI Agent Studio is not configured. Add the platform API key to the Orbit server environment.');
+  const projectId = String(process.env.AI_AGENT_STUDIO_PROJECT_ID || '').trim();
+  const token = String(process.env.AI_AGENT_STUDIO_API_TOKEN || '');
+  if (!/^[A-Za-z0-9_.-]{3,80}$/.test(projectId) || Buffer.byteLength(token, 'utf8') < 32) {
+    throw new AgentStudioUpstreamError(503, 'AI Agent Studio is not configured. Add the project ID and API token to the Orbit server environment.');
   }
   let parsed;
   try { parsed = new URL(base); } catch {
@@ -26,16 +27,16 @@ function serviceConfig() {
   if (process.env.NODE_ENV === 'production' && parsed.protocol !== 'https:') {
     throw new AgentStudioUpstreamError(503, 'Production AI Agent Studio requires HTTPS.');
   }
-  return { base: parsed.origin, key };
+  return { base: parsed.origin, projectId, token };
 }
 
 async function studioCall(path, { method = 'GET', payload, timeoutMs = 20000 } = {}) {
-  const { base, key } = serviceConfig();
+  const { base, projectId, token } = serviceConfig();
   let response;
   try {
     response = await fetch(base + '/api/v1/agents/' + path, {
       method,
-      headers: { 'X-API-Key': key, ...(payload ? { 'Content-Type': 'application/json' } : {}) },
+      headers: { 'X-Project-ID': projectId, Authorization: 'Bearer ' + token, ...(payload ? { 'Content-Type': 'application/json' } : {}) },
       ...(payload ? { body: JSON.stringify(payload) } : {}),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -90,7 +91,7 @@ export async function executeStudioAgent({ agentId, action, input, userId }) {
   // This user reference is bound to the verified Orbit JWT and existing Orbit DB record.
   return studioCall('external/' + encodeURIComponent(agentId) + '/' + action, {
     method: 'POST',
-    payload: { context: { platformRef: 'orbit', externalUserRef: 'orbit-user-' + userId }, input },
+    payload: { context: { externalUserRef: 'orbit-user-' + userId }, input },
     timeoutMs: action === 'generate' ? 145000 : 105000,
   });
 }

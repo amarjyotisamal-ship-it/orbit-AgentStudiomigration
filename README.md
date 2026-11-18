@@ -8,12 +8,12 @@ login, shared user database, copied agent business logic, iframe, or redirect.
 ## Architecture
 
 ```
-Browser -> Orbit JWT -> Orbit Node/SQLite -> X-API-Key -> IRMA Node API
+Browser -> Orbit JWT -> Orbit Node/SQLite -> X-Project-ID + Bearer token -> IRMA Node API
                                                    |-> Agnes stateless image
                                                    |-> IRMA Python analytics
 ```
 
-The browser receives only safe catalog metadata and agent output; the API key
+The browser receives only safe catalog metadata and agent output; the API token
 is only read by the Orbit Node process. The real Agent Studio backend owns
 execution. The live catalog includes **every available DB agent plus workspace-
 only catalog cards** that were present at the source audit. Some require their
@@ -27,7 +27,7 @@ analytics, plus the existing provider configuration for live image generation.
 
 ```powershell
 git pull
-# Configure the same locally generated AI_AGENT_STUDIO_API_KEY in:
+# Configure the same project ID + locally generated API token in:
 # 1. Ishvara-Tech/aiagent-backend/.env
 # 2. python-migration/.env
 .\run.ps1
@@ -41,12 +41,14 @@ existing installations it never overwrites local secrets. Set:
 
 ```env
 AI_AGENT_STUDIO_URL=http://127.0.0.1:5001
-AI_AGENT_STUDIO_API_KEY=<same-platform-secret-as-IRMA-node>
+AI_AGENT_STUDIO_PROJECT_ID=orbit-poc
+AI_AGENT_STUDIO_API_TOKEN=<same-project-secret-as-IRMA-node>
 ```
 
 The **IRMA** Node backend independently needs:
 ```env
-AI_AGENT_STUDIO_API_KEY=<same-platform-secret>
+AI_AGENT_STUDIO_PROJECT_ID=orbit-poc
+AI_AGENT_STUDIO_API_TOKEN=<same-project-secret>
 PYTHON_SERVICE_URL=http://127.0.0.1:8001
 IRMA_SERVICE_SECRET=<pre-existing-shared-Node-Python-secret>
 AGNES_API_KEY=<existing-provider-secret>
@@ -76,9 +78,9 @@ The IRMA Node external API is at `http://127.0.0.1:5001/api/v1/agents`.
 See the private IRMA backend `docs/external-agent-studio-api.md` for working
 cURL examples. Postman collection with an entry for **every catalog agent**:
 ```powershell
-curl.exe -H "X-API-Key: YOUR_LOCAL_KEY" http://127.0.0.1:5001/api/v1/agents/postman-collection -o AI-Agent-Studio-External-API.postman_collection.json
+curl.exe -H "X-Project-ID: orbit-poc" -H "Authorization: Bearer YOUR_LOCAL_TOKEN" http://127.0.0.1:5001/api/v1/agents/postman-collection -o AI-Agent-Studio-External-API.postman_collection.json
 ```
-This export contains no actual API key. Import it and set `api_key` locally.
+This export contains no actual API token. Import it and set `api_key` locally.
 
 ## Boundaries
 
