@@ -154,6 +154,7 @@ function Workspace({ user, onLogout }) {
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [catalogError, setCatalogError] = useState('');
   const [search, setSearch] = useState('');
+  const searchRef = useRef(null);
   const [category, setCategory] = useState('All categories');
   const [availability, setAvailability] = useState('all');
   const [favorites, setFavorites] = useState(new Set());
@@ -213,6 +214,19 @@ function Workspace({ user, onLogout }) {
     catch (err) { setDemoError(textOf(err)); }
   }
   useEffect(() => { void loadCatalog(); void loadSaved(); void loadFavorites(); }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (e.key === 'Escape' && selected) {
+        backToCatalog();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selected]);
 
   const agents = catalog?.agents || [];
   const availableCount = agents.filter(a => a.externalApi).length;
@@ -334,7 +348,11 @@ function Workspace({ user, onLogout }) {
           </div>
           {catalogError && <div className="catalog-alert" role="alert"><AlertCircle/><div><b>Cannot load the real Agent Studio catalog</b><p>{catalogError} Orbit login and your local database remain available.</p></div><button onClick={loadCatalog}>Retry</button></div>}
           <div className="catalog-toolbar">
-            <label className="catalog-search"><Search size={18}/><input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search all agents, categories, or capabilities" aria-label="Search all agents"/></label>
+            <label className="catalog-search">
+              <Search size={18}/>
+              <input ref={searchRef} type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search all agents, categories, or capabilities" aria-label="Search all agents"/>
+              <kbd className="search-kbd">⌘K</kbd>
+            </label>
             <select aria-label="Filter by category" value={category} onChange={e => setCategory(e.target.value)}>
               {categories.map(name => <option key={name} value={name}>{name}</option>)}
             </select>

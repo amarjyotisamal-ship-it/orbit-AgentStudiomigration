@@ -88,6 +88,7 @@
 .action-btn { background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.15s ease; }
 .action-btn:hover { background:#334155; color:#fff; border-color:#475569; }
 .action-btn:active { transform:scale(0.97); }
+.search-kbd { background:#1e293b; color:#94a3b8; border:1px solid #334155; border-radius:4px; font-size:10px; font-family:inherit; padding:2px 6px; margin-left:auto; pointer-events:none; }
 .response-heading h3 { color:#f2f5ff; margin:5px 0; text-transform:capitalize; }
 .response-summary { color:#d9e0f0; line-height:1.7; }
 .response-notice { margin:15px 0; color:#ffd2aa; font-size:13px; }
