@@ -4,7 +4,7 @@ import {
   Sparkles, LayoutDashboard, History, LogOut, ArrowRight, ShieldCheck, Database,
   Zap, Trash2, CheckCircle2, Image as ImageIcon, Search, RefreshCw,
   LockKeyhole, Braces, Play, ChevronLeft, AlertCircle, FileText,
-  Server, Activity, ArrowUpRight, Layers3, Star, Copy, Download, Check
+  Server, Activity, ArrowUpRight, Layers3, Star, Copy, Download, Check, Clock
 } from 'lucide-react';
 import { request } from './api.js';
 import './styles.css';
@@ -122,6 +122,11 @@ function Results({ value }) {
           <span className="eyebrow">AGENT RESPONSE</span><h3>{String(value.status || content.status || 'Request completed').replaceAll('_', ' ')}</h3>
         </div></div>
         <div className="response-actions">
+          {value?._meta?.latencyMs != null && (
+            <span className="response-timing" title="Round-trip execution duration">
+              <Clock size={13} /> {value._meta.latencyMs}ms
+            </span>
+          )}
           <button type="button" className="action-btn" onClick={copyJson} title="Copy JSON output">
             {copied ? <Check size={14} color="#34d399"/> : <Copy size={14}/>} {copied ? 'Copied' : 'Copy JSON'}
           </button>
