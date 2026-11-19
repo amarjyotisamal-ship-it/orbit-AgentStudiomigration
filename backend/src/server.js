@@ -149,6 +149,34 @@ app.post("/api/agents/:agentId/:action", requireAuth, agentLimiter, async (req, 
   } catch (error) { studioError(res, error); }
 });
 
+app.get("/api/agents/favorites", requireAuth, (req, res) => {
+  const userId = orbitUser(req);
+  if (!userId) return res.status(401).json({ error: "Account no longer available." });
+  const rows = db.prepare("SELECT agent_key, created_at FROM user_agent_favorites WHERE user_id = ? ORDER BY id DESC").all(userId);
+  res.json({ favorites: rows.map(r => r.agent_key) });
+});
+
+app.post("/api/agents/favorites/:key", requireAuth, (req, res) => {
+  const userId = orbitUser(req);
+  if (!userId) return res.status(401).json({ error: "Account no longer available." });
+  const key = String(req.params.key || '').trim();
+  if (!key || key.length > 120) return res.status(400).json({ error: "Invalid agent key." });
+  try {
+    db.prepare("INSERT OR IGNORE INTO user_agent_favorites (user_id, agent_key) VALUES (?, ?)").run(userId, key);
+    res.status(201).json({ success: true, agentKey: key, favorited: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to bookmark agent." });
+  }
+});
+
+app.delete("/api/agents/favorites/:key", requireAuth, (req, res) => {
+  const userId = orbitUser(req);
+  if (!userId) return res.status(401).json({ error: "Account no longer available." });
+  const key = String(req.params.key || '').trim();
+  db.prepare("DELETE FROM user_agent_favorites WHERE user_id = ? AND agent_key = ?").run(userId, key);
+  res.status(200).json({ success: true, agentKey: key, favorited: false });
+});
+
 app.delete("/api/generations/:id", requireAuth, (req, res) => {
   const info = db.prepare("DELETE FROM generations WHERE id = ? AND user_id = ?").run(Number(req.params.id), Number(req.identity.sub));
   if (!info.changes) return res.status(404).json({ error: "Saved generation not found" });
