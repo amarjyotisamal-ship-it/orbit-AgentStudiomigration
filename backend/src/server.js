@@ -13,9 +13,12 @@ import { issueToken, requireAuth } from "./auth.js";
 import { generateContent } from "./aiAdapter.js";
 import { getStudioCatalog, getAgentContract, executeStudioAgent, AgentStudioUpstreamError } from "./agentStudioClient.js";
 import { requestLogger } from "./middleware/logger.js";
+import { createRateLimiter } from "./middleware/rateLimiter.js";
 
 const app = express();
 const port = Number(process.env.PORT || 5101);
+const authLimiter = createRateLimiter({ windowMs: 60000, maxRequests: 30, message: "Too many login attempts. Please try again in a minute." });
+const agentLimiter = createRateLimiter({ windowMs: 60000, maxRequests: 60, message: "Agent execution rate limit reached. Please pace your requests." });
 app.use(requestLogger);
 app.use(helmet());
 app.use(cors({ origin: ["http://localhost:3002", "http://127.0.0.1:3002"] }));
@@ -53,7 +56,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/auth/register", authLimiter, async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
   const exists = db.prepare("SELECT id FROM users WHERE email = ?").get(parsed.data.email);
@@ -64,7 +67,7 @@ app.post("/api/auth/register", async (req, res) => {
   res.status(201).json({ token: issueToken(user), user: publicUser(user) });
 });
 
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", authLimiter, async (req, res) => {
   const parsed = credentials.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Enter a valid email and password" });
   const user = db.prepare("SELECT * FROM users WHERE email = ?").get(parsed.data.email);
@@ -120,7 +123,7 @@ app.get("/api/agents/:agentId/contract", requireAuth, async (req, res) => {
   catch (error) { studioError(res, error); }
 });
 
-app.post("/api/agents/:agentId/:action", requireAuth, async (req, res) => {
+app.post("/api/agents/:agentId/:action", requireAuth, agentLimiter, async (req, res) => {
   const userId = orbitUser(req);
   if (!userId) return res.status(401).json({ error: "Account no longer available." });
   if (!req.body || Object.keys(req.body).some(k => k !== 'input')) {
