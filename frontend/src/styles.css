@@ -111,6 +111,7 @@
 .tile-actions { display:flex; align-items:center; gap:8px; }
 .header-status-area { display:flex; align-items:center; gap:10px; }
 .latency-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); color:#a5b4fc; padding:4px 9px; border-radius:20px; font-size:11px; font-weight:600; }
+.sidebar-fav-pill { display:inline-flex; align-items:center; gap:3px; background:rgba(251,191,36,0.15); color:#fbbf24; font-size:11px; padding:2px 6px; border-radius:10px; margin-left:auto; }
 .fav-star-btn { background:transparent; border:none; cursor:pointer; padding:4px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; transition:transform 0.15s ease, background 0.15s ease; }
 .fav-star-btn:hover { background:rgba(255,255,255,0.08); transform:scale(1.15); }
 .fav-star-btn:active { transform:scale(0.95); }

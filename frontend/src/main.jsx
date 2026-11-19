@@ -339,7 +339,8 @@ function Workspace({ user, onLogout }) {
         <div className="logo"><Sparkles size={20}/> Orbit AI</div>
         <nav aria-label="Workspace navigation">
           <button className={view === 'catalog' ? 'active' : ''} onClick={() => { setView('catalog'); backToCatalog(); }}>
-            <Layers3/> AI Agent Studio {catalog && <small>{agents.length}</small>}
+            <Layers3/> AI Agent Studio {catalog && <small>{availableCount} active</small>}
+            {favorites.size > 0 && <span className="sidebar-fav-pill"><Star size={11} fill="#fbbf24" color="#fbbf24"/> {favorites.size}</span>}
           </button>
           <button className={view === 'sandbox' ? 'active' : ''} onClick={() => setView('sandbox')}><Braces/> Local demo</button>
           <button className={view === 'history' ? 'active' : ''} onClick={() => setView('history')}><History/> Demo history <small>{saved.length}</small></button>
