@@ -8,8 +8,18 @@ const dataDir = path.join(here, "..", "data");
 fs.mkdirSync(dataDir, { recursive: true });
 
 export const db = new Database(path.join(dataDir, "poc.sqlite"));
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
+db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA synchronous = NORMAL;");
+
+const originalPrepare = db.prepare.bind(db);
+const statementCache = new Map();
+db.prepare = function(sql) {
+  let stmt = statementCache.get(sql);
+  if (!stmt) {
+    stmt = originalPrepare(sql);
+    statementCache.set(sql, stmt);
+  }
+  return stmt;
+};
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
