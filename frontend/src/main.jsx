@@ -280,7 +280,14 @@ function Workspace({ user, onLogout }) {
         <header className="page-header">
           <div><span className="eyebrow">ORBIT / EXTERNAL AI PLATFORM</span>
             <h1>{view === 'catalog' ? 'AI Agent Studio' : view === 'sandbox' ? 'Local sandbox' : 'Saved demo history'}</h1></div>
-          <span className="status"><i/> Orbit database connected</span>
+          <div className="header-status-area">
+            {catalog?._meta?.latencyMs != null && (
+              <span className="latency-badge" title="Live Agent Studio catalog round-trip latency">
+                <Activity size={12} /> {catalog._meta.latencyMs}ms
+              </span>
+            )}
+            <span className="status"><i/> Orbit database connected</span>
+          </div>
         </header>
 
         {view === 'catalog' && !selected && <>
