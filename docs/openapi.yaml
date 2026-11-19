@@ -1,0 +1,35 @@
+openapi: 3.0.3
+info:
+  title: Orbit AI Host REST API
+  description: Independent enterprise gateway API for Orbit AI and AI Agent Studio
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:5101/api
+    description: Local development server
+paths:
+  /health:
+    get:
+      summary: Health check & diagnostics
+      responses:
+        '200':
+          description: System status and uptime
+  /auth/login:
+    post:
+      summary: User authentication
+      responses:
+        '200':
+          description: JWT token and user profile
+  /agents/catalog:
+    get:
+      summary: Discover external AI Agent Studio catalog
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Available agents with capability metadata
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
