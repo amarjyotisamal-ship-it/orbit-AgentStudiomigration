@@ -71,6 +71,20 @@ function Auth({ onAuth }) {
   );
 }
 
+function Toast({ toasts, onDismiss }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="toast-container" role="status" aria-live="polite">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast-item ${t.type || 'info'}`} onClick={() => onDismiss(t.id)}>
+          {t.type === 'success' ? <CheckCircle2 size={16} color="#34d399"/> : <AlertCircle size={16} color="#f87171"/>}
+          <span>{t.message}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function StatusPill({ ready }) {
   return <span className={ready ? 'agent-state ready' : 'agent-state blocked'}>
     <span className="agent-state-dot"/>{ready ? 'External API ready' : 'Not externally enabled'}
@@ -158,6 +172,15 @@ function Workspace({ user, onLogout }) {
   const [category, setCategory] = useState('All categories');
   const [availability, setAvailability] = useState('all');
   const [favorites, setFavorites] = useState(new Set());
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = 'info') => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev.slice(-3), { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3500);
+  };
 
   async function loadFavorites() {
     try {
@@ -173,10 +196,12 @@ function Workspace({ user, onLogout }) {
     if (isFav) {
       next.delete(agentKey);
       setFavorites(next);
+      showToast("Removed from favorites", "info");
       await request('/agents/favorites/' + encodeURIComponent(agentKey), { method: 'DELETE' }).catch(() => {});
     } else {
       next.add(agentKey);
       setFavorites(next);
+      showToast("Added to favorites", "success");
       await request('/agents/favorites/' + encodeURIComponent(agentKey), { method: 'POST' }).catch(() => {});
     }
   }
@@ -476,6 +501,7 @@ function Workspace({ user, onLogout }) {
               </div><button aria-label="Delete saved demo" onClick={() => removeSaved(item.id)}><Trash2 size={18}/></button>
             </article>)}
         </section>}
+        <Toast toasts={toasts} onDismiss={id => setToasts(t => t.filter(x => x.id !== id))} />
       </main>
     </div>
   );

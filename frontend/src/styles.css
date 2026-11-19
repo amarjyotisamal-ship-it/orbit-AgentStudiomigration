@@ -89,6 +89,11 @@
 .action-btn:hover { background:#334155; color:#fff; border-color:#475569; }
 .action-btn:active { transform:scale(0.97); }
 .search-kbd { background:#1e293b; color:#94a3b8; border:1px solid #334155; border-radius:4px; font-size:10px; font-family:inherit; padding:2px 6px; margin-left:auto; pointer-events:none; }
+.toast-container { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:9999; pointer-events:none; }
+.toast-item { pointer-events:auto; display:flex; align-items:center; gap:10px; background:#1e293b; color:#f1f5f9; border:1px solid #334155; padding:10px 16px; border-radius:10px; font-size:13px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.5); cursor:pointer; animation:toastIn 0.2s cubic-bezier(0.16,1,0.3,1); }
+.toast-item.success { border-color:#059669; }
+.toast-item.error { border-color:#dc2626; color:#fca5a5; }
+@keyframes toastIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 .response-heading h3 { color:#f2f5ff; margin:5px 0; text-transform:capitalize; }
 .response-summary { color:#d9e0f0; line-height:1.7; }
 .response-notice { margin:15px 0; color:#ffd2aa; font-size:13px; }
