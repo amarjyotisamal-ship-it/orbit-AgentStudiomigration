@@ -34,7 +34,24 @@ const generateSchema = z.object({
 
 const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, createdAt: u.created_at });
 
-app.get("/api/health", (_req, res) => res.json({ status: "ok", database: "sqlite", aiMode: process.env.AI_MODE || "mock", agentStudioConfigured: Buffer.byteLength(String(process.env.AI_AGENT_STUDIO_API_KEY || ""), "utf8") >= 32 }));
+app.get("/api/health", (_req, res) => {
+  const mem = process.memoryUsage();
+  res.json({
+    status: "ok",
+    database: "sqlite",
+    aiMode: process.env.AI_MODE || "mock",
+    agentStudioConfigured: Boolean(
+      process.env.AI_AGENT_STUDIO_PROJECT_ID &&
+      Buffer.byteLength(String(process.env.AI_AGENT_STUDIO_API_TOKEN || ""), "utf8") >= 32
+    ),
+    system: {
+      uptimeSeconds: Math.floor(process.uptime()),
+      nodeVersion: process.version,
+      heapUsedMb: Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100,
+      timestamp: new Date().toISOString()
+    }
+  });
+});
 
 app.post("/api/auth/register", async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
