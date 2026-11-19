@@ -4,7 +4,7 @@ import {
   Sparkles, LayoutDashboard, History, LogOut, ArrowRight, ShieldCheck, Database,
   Zap, Trash2, CheckCircle2, Image as ImageIcon, Search, RefreshCw,
   LockKeyhole, Braces, Play, ChevronLeft, AlertCircle, FileText,
-  Server, Activity, ArrowUpRight, Layers3
+  Server, Activity, ArrowUpRight, Layers3, Star
 } from 'lucide-react';
 import { request } from './api.js';
 import './styles.css';
@@ -127,6 +127,29 @@ function Workspace({ user, onLogout }) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All categories');
   const [availability, setAvailability] = useState('all');
+  const [favorites, setFavorites] = useState(new Set());
+
+  async function loadFavorites() {
+    try {
+      const data = await request('/agents/favorites');
+      if (Array.isArray(data.favorites)) setFavorites(new Set(data.favorites));
+    } catch {}
+  }
+
+  async function toggleFavorite(e, agentKey) {
+    e.stopPropagation();
+    const isFav = favorites.has(agentKey);
+    const next = new Set(favorites);
+    if (isFav) {
+      next.delete(agentKey);
+      setFavorites(next);
+      await request('/agents/favorites/' + encodeURIComponent(agentKey), { method: 'DELETE' }).catch(() => {});
+    } else {
+      next.add(agentKey);
+      setFavorites(next);
+      await request('/agents/favorites/' + encodeURIComponent(agentKey), { method: 'POST' }).catch(() => {});
+    }
+  }
   const [selected, setSelected] = useState(null);
   const [contract, setContract] = useState(null);
   const [loadingContract, setLoadingContract] = useState(false);
@@ -160,7 +183,7 @@ function Workspace({ user, onLogout }) {
     try { const data = await request('/generations'); setSaved(data.items || []); }
     catch (err) { setDemoError(textOf(err)); }
   }
-  useEffect(() => { void loadCatalog(); void loadSaved(); }, []);
+  useEffect(() => { void loadCatalog(); void loadSaved(); void loadFavorites(); }, []);
 
   const agents = catalog?.agents || [];
   const availableCount = agents.filter(a => a.externalApi).length;
@@ -169,9 +192,10 @@ function Workspace({ user, onLogout }) {
     if (category !== 'All categories' && (agent.category || 'Other') !== category) return false;
     if (availability === 'ready' && !agent.externalApi) return false;
     if (availability === 'blocked' && agent.externalApi) return false;
+    if (availability === 'favorites' && !favorites.has(agent.id) && !favorites.has(agent.capabilityId)) return false;
     const key = search.toLowerCase().trim();
     return !key || [agent.name, agent.id, agent.category, agent.description, agent.capabilityId].some(value => String(value || '').toLowerCase().includes(key));
-  }), [catalog, search, category, availability]);
+  }), [catalog, search, category, availability, favorites]);
 
   async function openAgent(agent) {
     const serial = ++selectionSerial.current;
@@ -279,7 +303,10 @@ function Workspace({ user, onLogout }) {
               {categories.map(name => <option key={name} value={name}>{name}</option>)}
             </select>
             <select aria-label="Filter by API availability" value={availability} onChange={e => setAvailability(e.target.value)}>
-              <option value="all">All agents</option><option value="ready">API ready</option><option value="blocked">Needs adapter</option>
+              <option value="all">All agents</option>
+              <option value="ready">API ready</option>
+              <option value="blocked">Needs adapter</option>
+              <option value="favorites">★ Favorites ({favorites.size})</option>
             </select>
             <button className="refresh-btn" onClick={loadCatalog} disabled={loadingCatalog}><RefreshCw size={16}/> Refresh</button>
           </div>
@@ -287,7 +314,20 @@ function Workspace({ user, onLogout }) {
           {!loadingCatalog && catalog && filteredAgents.length === 0 && <div className="catalog-empty">No agents match your search or filters.</div>}
           <section className="agent-grid" aria-label="AI Agent Studio catalog">
             {filteredAgents.map(agent => <button className="agent-tile" key={agent.id} onClick={() => openAgent(agent)}>
-              <span className="tile-top"><span className="tile-icon">{agent.mode === 'generate' ? <ImageIcon/> : agent.externalApi ? <Activity/> : <Layers3/>}</span><StatusPill ready={agent.externalApi}/></span>
+              <span className="tile-top">
+                <span className="tile-icon">{agent.mode === 'generate' ? <ImageIcon/> : agent.externalApi ? <Activity/> : <Layers3/>}</span>
+                <span className="tile-actions">
+                  <button
+                    type="button"
+                    className={`fav-star-btn ${favorites.has(agent.id) ? 'active' : ''}`}
+                    onClick={(e) => toggleFavorite(e, agent.id)}
+                    title={favorites.has(agent.id) ? 'Remove bookmark' : 'Bookmark agent'}
+                  >
+                    <Star size={14} fill={favorites.has(agent.id) ? '#fbbf24' : 'none'} color={favorites.has(agent.id) ? '#fbbf24' : '#64748b'} />
+                  </button>
+                  <StatusPill ready={agent.externalApi}/>
+                </span>
+              </span>
               <span className="tile-category">{agent.category || 'Agent Studio'}</span>
               <strong>{agent.name}</strong><span className="tile-description">{agent.description || 'Agent workflow and capability.'}</span>
               <span className="tile-foot"><small>{agent.externalApi ? 'Open external agent' : 'View integration status'}</small><ArrowUpRight size={16}/></span>

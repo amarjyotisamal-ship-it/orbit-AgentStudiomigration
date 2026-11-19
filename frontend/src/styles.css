@@ -96,6 +96,10 @@
 .candidate>span { font-size:12px; color:#99a7c1; }
 .candidate-empty { height:180px; color:#adb7c7; display:grid; gap:8px; align-content:center; justify-items:center; font-size:11px; }
 .history-open { margin-top:10px; font-size:12px; color:#b1c4ff; background:transparent; border:0; cursor:pointer; padding:0; }
+.tile-actions { display:flex; align-items:center; gap:8px; }
+.fav-star-btn { background:transparent; border:none; cursor:pointer; padding:4px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; transition:transform 0.15s ease, background 0.15s ease; }
+.fav-star-btn:hover { background:rgba(255,255,255,0.08); transform:scale(1.15); }
+.fav-star-btn:active { transform:scale(0.95); }
 @media(max-width:1250px) { .agent-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .execution-layout { grid-template-columns:minmax(0,1fr); } }
 @media(max-width:900px) { .app-shell { grid-template-columns:1fr; } .hero-shield { display:none; } .catalog-hero { padding:24px; } .catalog-toolbar select { flex:1; } }
 @media(max-width:610px) { .agent-grid,.candidate-grid,.form-split { grid-template-columns:1fr; } .catalog-stats { grid-template-columns:repeat(3,1fr); gap:7px; } .catalog-stats>div { padding:12px; } .catalog-stats strong { font-size:23px; } .catalog-toolbar select { min-width:100%; } .agent-detail-intro { display:grid; } .execution-panel,.contract-panel,.studio-response { padding:19px; } .catalog-hero h2 { font-size:29px; } }
