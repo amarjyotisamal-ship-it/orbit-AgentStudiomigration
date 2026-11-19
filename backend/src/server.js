@@ -123,17 +123,27 @@ app.get("/api/agents/:agentId/contract", requireAuth, async (req, res) => {
   catch (error) { studioError(res, error); }
 });
 
+const agentExecutionSchema = z.object({
+  input: z.record(z.any()).refine(val => typeof val === 'object' && val !== null && !Array.isArray(val), {
+    message: "Input must be a valid key-value object."
+  })
+});
+
 app.post("/api/agents/:agentId/:action", requireAuth, agentLimiter, async (req, res) => {
   const userId = orbitUser(req);
   if (!userId) return res.status(401).json({ error: "Account no longer available." });
-  if (!req.body || Object.keys(req.body).some(k => k !== 'input')) {
+  const parsed = agentExecutionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(422).json({ error: parsed.error.issues[0]?.message || "Invalid input object. Orbit provides verified context." });
+  }
+  if (req.body && Object.keys(req.body).some(k => k !== 'input')) {
     return res.status(422).json({ error: "Supply an input object only. Orbit provides verified context." });
   }
   try {
     res.json(await executeStudioAgent({
       agentId: req.params.agentId,
       action: req.params.action,
-      input: req.body.input,
+      input: parsed.data.input,
       userId,
     }));
   } catch (error) { studioError(res, error); }
