@@ -83,6 +83,11 @@
 .blocked-workflow>div { padding:14px; background:#1f293a; border-radius:10px; font-size:12px; }
 .studio-response { margin-top:18px; }
 .response-heading { display:flex; align-items:center; gap:12px; color:#7ee4b2; }
+.response-heading-wrap { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:12px; }
+.response-actions { display:flex; align-items:center; gap:8px; }
+.action-btn { background:#1e293b; color:#cbd5e1; border:1px solid #334155; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.15s ease; }
+.action-btn:hover { background:#334155; color:#fff; border-color:#475569; }
+.action-btn:active { transform:scale(0.97); }
 .response-heading h3 { color:#f2f5ff; margin:5px 0; text-transform:capitalize; }
 .response-summary { color:#d9e0f0; line-height:1.7; }
 .response-notice { margin:15px 0; color:#ffd2aa; font-size:13px; }

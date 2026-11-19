@@ -4,7 +4,7 @@ import {
   Sparkles, LayoutDashboard, History, LogOut, ArrowRight, ShieldCheck, Database,
   Zap, Trash2, CheckCircle2, Image as ImageIcon, Search, RefreshCw,
   LockKeyhole, Braces, Play, ChevronLeft, AlertCircle, FileText,
-  Server, Activity, ArrowUpRight, Layers3, Star
+  Server, Activity, ArrowUpRight, Layers3, Star, Copy, Download, Check
 } from 'lucide-react';
 import { request } from './api.js';
 import './styles.css';
@@ -79,14 +79,43 @@ function StatusPill({ ready }) {
 
 function Results({ value }) {
   if (!value) return null;
+  const [copied, setCopied] = useState(false);
   const content = value.output || value;
   const candidates = Array.isArray(value.candidates) ? value.candidates : [];
   const summary = content.summary || content.executive_summary || content.direct_answer || content.executive_assessment;
+
+  function copyJson() {
+    navigator.clipboard.writeText(JSON.stringify(value, null, 2)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function downloadJson() {
+    const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agent-output-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <section className="studio-response" aria-live="polite">
-      <div className="response-heading"><CheckCircle2 size={21}/><div>
-        <span className="eyebrow">AGENT RESPONSE</span><h3>{String(value.status || content.status || 'Request completed').replaceAll('_', ' ')}</h3>
-      </div></div>
+      <div className="response-heading-wrap">
+        <div className="response-heading"><CheckCircle2 size={21}/><div>
+          <span className="eyebrow">AGENT RESPONSE</span><h3>{String(value.status || content.status || 'Request completed').replaceAll('_', ' ')}</h3>
+        </div></div>
+        <div className="response-actions">
+          <button type="button" className="action-btn" onClick={copyJson} title="Copy JSON output">
+            {copied ? <Check size={14} color="#34d399"/> : <Copy size={14}/>} {copied ? 'Copied' : 'Copy JSON'}
+          </button>
+          <button type="button" className="action-btn" onClick={downloadJson} title="Download JSON file">
+            <Download size={14}/> Export
+          </button>
+        </div>
+      </div>
       {summary && <p className="response-summary">{summary}</p>}
       {candidates.length > 0 && <div className="candidate-grid">
         {candidates.map((candidate, index) => (
