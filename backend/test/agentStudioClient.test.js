@@ -57,3 +57,24 @@ test('missing project credentials fail closed', async () => {
     await assert.rejects(getStudioCatalog, error => error instanceof AgentStudioUpstreamError && error.status === 503);
   } finally { process.env.AI_AGENT_STUDIO_PROJECT_ID = saved.projectId; process.env.AI_AGENT_STUDIO_API_TOKEN = saved.token; }
 });
+
+test('studioCall attaches latencyMs and timestamp metadata to responses', async () => {
+  process.env.AI_AGENT_STUDIO_PROJECT_ID = PROJECT_ID;
+  process.env.AI_AGENT_STUDIO_API_TOKEN = TOKEN;
+  process.env.AI_AGENT_STUDIO_URL = 'http://127.0.0.1:5001';
+  globalThis.fetch = async () => new Response(JSON.stringify({ agents: [{ id: 'test_agent' }] }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
+  try {
+    const catalog = await getStudioCatalog();
+    assert.ok(catalog._meta);
+    assert.equal(typeof catalog._meta.latencyMs, 'number');
+    assert.ok(catalog._meta.latencyMs >= 0);
+    assert.ok(catalog._meta.timestamp);
+  } finally {
+    globalThis.fetch = saved.fetch;
+    process.env.AI_AGENT_STUDIO_PROJECT_ID = saved.projectId;
+    process.env.AI_AGENT_STUDIO_API_TOKEN = saved.token;
+  }
+});
