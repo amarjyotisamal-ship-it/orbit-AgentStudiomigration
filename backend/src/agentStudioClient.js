@@ -32,6 +32,7 @@ function serviceConfig() {
 
 async function studioCall(path, { method = 'GET', payload, timeoutMs = 20000 } = {}) {
   const { base, projectId, token } = serviceConfig();
+  const startTime = Date.now();
   let response;
   try {
     response = await fetch(base + '/api/v1/agents/' + path, {
@@ -43,6 +44,7 @@ async function studioCall(path, { method = 'GET', payload, timeoutMs = 20000 } =
   } catch {
     throw new AgentStudioUpstreamError(503, 'AI Agent Studio is unreachable. Check the Node service and its URL.');
   }
+  const latencyMs = Date.now() - startTime;
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const safeMessage = typeof data?.error?.message === 'string' ? data.error.message :
@@ -51,6 +53,9 @@ async function studioCall(path, { method = 'GET', payload, timeoutMs = 20000 } =
       [400, 401, 403, 404, 409, 422, 429, 502, 503, 504].includes(response.status) ? response.status : 502,
       safeMessage
     );
+  }
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    data._meta = { latencyMs, timestamp: new Date().toISOString() };
   }
   return data;
 }
